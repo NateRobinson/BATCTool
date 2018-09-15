@@ -1,9 +1,10 @@
 query transactionsByAddressForReceiver($receiver: String, $paging: PageInput) {
   transactionsByAddress(receiver: $receiver, paging: $paging) {
     data {
-      blockHash
+      hash
       blockHeight
       numberOutputs
+      numberInputs
     }
     page {
       cursor

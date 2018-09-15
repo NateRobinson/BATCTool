@@ -16,6 +16,9 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(MainActivity.this, TxsAsSenderRoleActivity.class);
+				Bundle bundle = new Bundle();
+				bundle.putString("address","16ftSEQ4ctQFDtVZiUBusQUjRrGhM3JYwe");
+				intent.putExtras(bundle);
 				startActivity(intent);
 			}
 		});
@@ -24,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(MainActivity.this, TxsAsReceiverRoleActivity.class);
+				Bundle bundle = new Bundle();
+				bundle.putString("address","16ftSEQ4ctQFDtVZiUBusQUjRrGhM3JYwe");
+				intent.putExtras(bundle);
 				startActivity(intent);
 			}
 		});
