@@ -11,8 +11,10 @@ import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
@@ -73,6 +75,13 @@ public class TxsAsSenderRoleActivity extends AppCompatActivity {
 				mTransactionsByAddressForSenderQueryHelper.loadMore();
 			}
 		}, mRecyclerView);
+
+		// empty view
+		View emptyView = LayoutInflater.from(this).inflate(R.layout.empty_of_txs, null);
+		TextView address_tv = emptyView.findViewById(R.id.address_tv);
+		address_tv.setText(address + " is right?");
+		mTxsAsSenderRoleAdapter.setEmptyView(emptyView);
+
 		mRecyclerView.setAdapter(mTxsAsSenderRoleAdapter);
 
 

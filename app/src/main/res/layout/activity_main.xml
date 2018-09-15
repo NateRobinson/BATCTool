@@ -21,7 +21,8 @@
 			android:id="@+id/address_input_et"
 			android:layout_width="match_parent"
 			android:layout_height="48dp"
-			android:layout_weight="1"/>
+			android:layout_weight="1"
+			android:hint="请输入Address地址"/>
 
 	</LinearLayout>
 
