@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.apollographql.android'
 
 android {
     compileSdkVersion 27
@@ -25,4 +26,12 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+	// x.x.x => release version
+	def absdkcorekitversion = "0.2.1"
+	implementation("com.arcblock.corekit:absdkcorekit:$absdkcorekitversion:release@aar"){
+		transitive = true
+	}
+
+	implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.30'
 }
