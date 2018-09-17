@@ -1,0 +1,15 @@
+query transactionsByAddress($receiver: String, $sender: String, $paging: PageInput) {
+  transactionsByAddress(receiver: $receiver,sender: $sender, paging: $paging) {
+    data {
+      hash
+      blockHeight
+      numberOutputs
+      numberInputs
+    }
+    page {
+      cursor
+      next
+      total
+    }
+  }
+}

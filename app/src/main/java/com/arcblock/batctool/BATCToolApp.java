@@ -13,32 +13,32 @@ import static com.arcblock.corekit.config.CoreKitConfig.ApiType.API_TYPE_BTC;
 
 public class BATCToolApp extends Application {
 
-	private ABCoreKitClient mABCoreClient;
+    private ABCoreKitClient mABCoreClient;
 
-	public static BATCToolApp INSTANCE = null;
+    public static BATCToolApp INSTANCE = null;
 
-	public static BATCToolApp getInstance() {
-		return INSTANCE;
-	}
+    public static BATCToolApp getInstance() {
+        return INSTANCE;
+    }
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
+    @Override
+    public void onCreate() {
+        super.onCreate();
 
-		INSTANCE = this;
-		Timber.plant(new Timber.DebugTree());
+        INSTANCE = this;
+        Timber.plant(new Timber.DebugTree());
 
-		mABCoreClient = ABCoreKitClient.builder(this, API_TYPE_BTC)
-				.setOpenOkHttpLog(true)
-				.setDefaultResponseFetcher(ApolloResponseFetchers.CACHE_AND_NETWORK)
-				.build();
-	}
+        mABCoreClient = ABCoreKitClient.builder(this, API_TYPE_BTC)
+                .setOpenOkHttpLog(true)
+                .setDefaultResponseFetcher(ApolloResponseFetchers.CACHE_AND_NETWORK)
+                .build();
+    }
 
-	@NotNull
-	public ABCoreKitClient abCoreKitClient() {
-		if (mABCoreClient == null) {
-			throw new RuntimeException("Please init corekit first.");
-		}
-		return mABCoreClient;
-	}
+    @NotNull
+    public ABCoreKitClient abCoreKitClient() {
+        if (mABCoreClient == null) {
+            throw new RuntimeException("Please init corekit first.");
+        }
+        return mABCoreClient;
+    }
 }

@@ -32,144 +32,144 @@ import java.util.List;
 
 public class TxsAsSenderRoleActivity extends AppCompatActivity {
 
-	private SwipeRefreshLayout mSwipeRefreshLayout;
-	private RecyclerView mRecyclerView;
-	private TxsAsSenderRoleAdapter mTxsAsSenderRoleAdapter;
-	private List<TransactionsByAddressForSenderQuery.Datum> mDatumList = new ArrayList<>();
-	private String address;
-	private TransactionsByAddressForSenderQueryHelper mTransactionsByAddressForSenderQueryHelper;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private RecyclerView mRecyclerView;
+    private TxsAsSenderRoleAdapter mTxsAsSenderRoleAdapter;
+    private List<TransactionsByAddressQuery.Datum> mDatumList = new ArrayList<>();
+    private String address;
+    private TransactionsByAddressQueryHelper mTransactionsByAddressQueryHelper;
 
-	@Override
-	protected void onCreate(@Nullable Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_txs_as_sender_role);
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_txs_as_sender_role);
 
-		address = getIntent().getExtras().getString("address");
+        address = getIntent().getExtras().getString("address");
 
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-		getSupportActionBar().setTitle("TxsAsSenderRole");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle("TxsAsSenderRole");
 
-		mSwipeRefreshLayout = findViewById(R.id.swipe_view);
+        mSwipeRefreshLayout = findViewById(R.id.swipe_view);
 
-		mSwipeRefreshLayout.setProgressBackgroundColorSchemeResource(android.R.color.white);
-		mSwipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary, R.color.colorPrimaryDark);
+        mSwipeRefreshLayout.setProgressBackgroundColorSchemeResource(android.R.color.white);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary, R.color.colorPrimaryDark);
 
-		mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-			@Override
-			public void onRefresh() {
-				mDatumList.clear();
-				mTxsAsSenderRoleAdapter.notifyDataSetChanged();
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                mDatumList.clear();
+                mTxsAsSenderRoleAdapter.notifyDataSetChanged();
 
-				mTxsAsSenderRoleAdapter.setEnableLoadMore(false);
-				mTransactionsByAddressForSenderQueryHelper.refresh();
-			}
-		});
+                mTxsAsSenderRoleAdapter.setEnableLoadMore(false);
+                mTransactionsByAddressQueryHelper.refresh();
+            }
+        });
 
-		mRecyclerView = findViewById(R.id.rcv);
-		mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView = findViewById(R.id.rcv);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-		mTxsAsSenderRoleAdapter = new TxsAsSenderRoleAdapter(R.layout.item_txs, mDatumList);
-		mTxsAsSenderRoleAdapter.setOnLoadMoreListener(new BaseQuickAdapter.RequestLoadMoreListener() {
-			@Override
-			public void onLoadMoreRequested() {
-				mTransactionsByAddressForSenderQueryHelper.loadMore();
-			}
-		}, mRecyclerView);
+        mTxsAsSenderRoleAdapter = new TxsAsSenderRoleAdapter(R.layout.item_txs, mDatumList);
+        mTxsAsSenderRoleAdapter.setOnLoadMoreListener(new BaseQuickAdapter.RequestLoadMoreListener() {
+            @Override
+            public void onLoadMoreRequested() {
+                mTransactionsByAddressQueryHelper.loadMore();
+            }
+        }, mRecyclerView);
 
-		// empty view
-		View emptyView = LayoutInflater.from(this).inflate(R.layout.empty_of_txs, null);
-		TextView address_tv = emptyView.findViewById(R.id.address_tv);
-		address_tv.setText(address + " is right?");
-		mTxsAsSenderRoleAdapter.setEmptyView(emptyView);
+        // empty view
+        View emptyView = LayoutInflater.from(this).inflate(R.layout.empty_of_txs, null);
+        TextView address_tv = emptyView.findViewById(R.id.address_tv);
+        address_tv.setText(address + " is right?");
+        mTxsAsSenderRoleAdapter.setEmptyView(emptyView);
 
-		mRecyclerView.setAdapter(mTxsAsSenderRoleAdapter);
+        mRecyclerView.setAdapter(mTxsAsSenderRoleAdapter);
 
 
-		mTransactionsByAddressForSenderQueryHelper = new TransactionsByAddressForSenderQueryHelper(this, this, BATCToolApp.getInstance().abCoreKitClient());
-		mTransactionsByAddressForSenderQueryHelper.setObserve(new Observer<CoreKitPagedBean<List<TransactionsByAddressForSenderQuery.Datum>>>() {
-			@Override
-			public void onChanged(@Nullable CoreKitPagedBean<List<TransactionsByAddressForSenderQuery.Datum>> coreKitPagedBean) {
-				//1. handle return data
-				if (coreKitPagedBean.getStatus() == CoreKitBean.SUCCESS_CODE) {
-					if (coreKitPagedBean.getData() != null) {
-						// new a old list
-						List<TransactionsByAddressForSenderQuery.Datum> oldList = new ArrayList<>();
-						oldList.addAll(mDatumList);
+        mTransactionsByAddressQueryHelper = new TransactionsByAddressQueryHelper(this, this, BATCToolApp.getInstance().abCoreKitClient());
+        mTransactionsByAddressQueryHelper.setObserve(new Observer<CoreKitPagedBean<List<TransactionsByAddressQuery.Datum>>>() {
+            @Override
+            public void onChanged(@Nullable CoreKitPagedBean<List<TransactionsByAddressQuery.Datum>> coreKitPagedBean) {
+                //1. handle return data
+                if (coreKitPagedBean.getStatus() == CoreKitBean.SUCCESS_CODE) {
+                    if (coreKitPagedBean.getData() != null) {
+                        // new a old list
+                        List<TransactionsByAddressQuery.Datum> oldList = new ArrayList<>();
+                        oldList.addAll(mDatumList);
 
-						// set mBlocks with new data
-						mDatumList = coreKitPagedBean.getData();
-						DiffUtil.DiffResult result = DiffUtil.calculateDiff(new CoreKitDiffUtil<>(oldList, mDatumList), true);
-						// need this line , otherwise the update will have no effect
-						mTxsAsSenderRoleAdapter.setNewData(mDatumList);
-						result.dispatchUpdatesTo(mTxsAsSenderRoleAdapter);
-					}
-				}
+                        // set mBlocks with new data
+                        mDatumList = coreKitPagedBean.getData();
+                        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new CoreKitDiffUtil<>(oldList, mDatumList), true);
+                        // need this line , otherwise the update will have no effect
+                        mTxsAsSenderRoleAdapter.setNewData(mDatumList);
+                        result.dispatchUpdatesTo(mTxsAsSenderRoleAdapter);
+                    }
+                }
 
-				//2. view status change and loadMore component need
-				mSwipeRefreshLayout.setVisibility(View.VISIBLE);
-				mSwipeRefreshLayout.setRefreshing(false);
-				if (mTransactionsByAddressForSenderQueryHelper.isHasMore()) {
-					mTxsAsSenderRoleAdapter.setEnableLoadMore(true);
-					mTxsAsSenderRoleAdapter.loadMoreComplete();
-				} else {
-					mTxsAsSenderRoleAdapter.loadMoreEnd();
-				}
-			}
-		});
-	}
+                //2. view status change and loadMore component need
+                mSwipeRefreshLayout.setVisibility(View.VISIBLE);
+                mSwipeRefreshLayout.setRefreshing(false);
+                if (mTransactionsByAddressQueryHelper.isHasMore()) {
+                    mTxsAsSenderRoleAdapter.setEnableLoadMore(true);
+                    mTxsAsSenderRoleAdapter.loadMoreComplete();
+                } else {
+                    mTxsAsSenderRoleAdapter.loadMoreEnd();
+                }
+            }
+        });
+    }
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-			case android.R.id.home:
-				this.finish();
-				return false;
-			default:
-				return super.onOptionsItemSelected(item);
-		}
-	}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                this.finish();
+                return false;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
-	/**
-	 * TransactionsByAddressForSenderQueryHelper for TransactionsByAddressForSenderQuery
-	 */
-	private class TransactionsByAddressForSenderQueryHelper extends CoreKitPagedQuery<TransactionsByAddressForSenderQuery.Data, TransactionsByAddressForSenderQuery.Datum> {
+    /**
+     * TransactionsByAddressQueryHelper for TransactionsByAddressQuery
+     */
+    private class TransactionsByAddressQueryHelper extends CoreKitPagedQuery<TransactionsByAddressQuery.Data, TransactionsByAddressQuery.Datum> {
 
-		public TransactionsByAddressForSenderQueryHelper(FragmentActivity activity, LifecycleOwner lifecycleOwner, ABCoreKitClient client) {
-			super(activity, lifecycleOwner, client);
-		}
+        public TransactionsByAddressQueryHelper(FragmentActivity activity, LifecycleOwner lifecycleOwner, ABCoreKitClient client) {
+            super(activity, lifecycleOwner, client);
+        }
 
-		@Override
-		public List<TransactionsByAddressForSenderQuery.Datum> map(Response<TransactionsByAddressForSenderQuery.Data> dataResponse) {
-			if (dataResponse != null && dataResponse.data().getTransactionsByAddress() != null) {
-				// set page info to CoreKitPagedQuery
-				if (dataResponse.data().getTransactionsByAddress().getPage() != null) {
-					// set is have next flag to CoreKitPagedQuery
-					setHasMore(dataResponse.data().getTransactionsByAddress().getPage().isNext());
-					// set new cursor to CoreKitPagedQuery
-					setCursor(dataResponse.data().getTransactionsByAddress().getPage().getCursor());
-				}
-				return dataResponse.data().getTransactionsByAddress().getData();
-			}
-			return null;
-		}
+        @Override
+        public List<TransactionsByAddressQuery.Datum> map(Response<TransactionsByAddressQuery.Data> dataResponse) {
+            if (dataResponse != null && dataResponse.data().getTransactionsByAddress() != null) {
+                // set page info to CoreKitPagedQuery
+                if (dataResponse.data().getTransactionsByAddress().getPage() != null) {
+                    // set is have next flag to CoreKitPagedQuery
+                    setHasMore(dataResponse.data().getTransactionsByAddress().getPage().isNext());
+                    // set new cursor to CoreKitPagedQuery
+                    setCursor(dataResponse.data().getTransactionsByAddress().getPage().getCursor());
+                }
+                return dataResponse.data().getTransactionsByAddress().getData();
+            }
+            return null;
+        }
 
-		@Override
-		public Query getInitialQuery() {
-			return TransactionsByAddressForSenderQuery.builder().sender(address).build();
-		}
+        @Override
+        public Query getInitialQuery() {
+            return TransactionsByAddressQuery.builder().sender(address).build();
+        }
 
-		@Override
-		public Query getLoadMoreQuery() {
-			PageInput pageInput = null;
-			if (!TextUtils.isEmpty(getCursor())) {
-				pageInput = PageInput.builder().cursor(getCursor()).build();
-			}
-			return TransactionsByAddressForSenderQuery.builder().sender(address).paging(pageInput).build();
-		}
+        @Override
+        public Query getLoadMoreQuery() {
+            PageInput pageInput = null;
+            if (!TextUtils.isEmpty(getCursor())) {
+                pageInput = PageInput.builder().cursor(getCursor()).build();
+            }
+            return TransactionsByAddressQuery.builder().sender(address).paging(pageInput).build();
+        }
 
-		@Override
-		public Query getRefreshQuery() {
-			return TransactionsByAddressForSenderQuery.builder().sender(address).build();
-		}
-	}
+        @Override
+        public Query getRefreshQuery() {
+            return TransactionsByAddressQuery.builder().sender(address).build();
+        }
+    }
 }
