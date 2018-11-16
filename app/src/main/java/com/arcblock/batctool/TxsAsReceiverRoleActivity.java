@@ -1,10 +1,7 @@
 package com.arcblock.batctool;
 
-import android.arch.lifecycle.LifecycleOwner;
-import android.arch.lifecycle.Observer;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.util.DiffUtil;
@@ -18,13 +15,11 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.apollographql.apollo.api.Query;
-import com.apollographql.apollo.api.Response;
 import com.arcblock.batctool.adapter.TxsAsReceiverRoleAdapter;
 import com.arcblock.batctool.type.PageInput;
-import com.arcblock.corekit.ABCoreKitClient;
 import com.arcblock.corekit.CoreKitPagedQuery;
-import com.arcblock.corekit.bean.CoreKitBean;
-import com.arcblock.corekit.bean.CoreKitPagedBean;
+import com.arcblock.corekit.CoreKitPagedQueryResultListener;
+import com.arcblock.corekit.PagedQueryHelper;
 import com.arcblock.corekit.utils.CoreKitDiffUtil;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.mikephil.charting.charts.LineChart;
@@ -42,10 +37,12 @@ public class TxsAsReceiverRoleActivity extends AppCompatActivity {
     private TxsAsReceiverRoleAdapter mTxsAsReceiverRoleAdapter;
     private List<TransactionsByAddressQuery.Datum> mDatumList = new ArrayList<>();
     private String address;
-    private TransactionsByAddressQueryHelper mTransactionsByAddressQueryHelper;
     private LineChart mLineChart;
     private boolean isShowChart = false;
     private Button mButton;
+
+    private PagedQueryHelper<TransactionsByAddressQuery.Data, TransactionsByAddressQuery.Datum> mPagedQueryHelper;
+    private CoreKitPagedQuery<TransactionsByAddressQuery.Data, TransactionsByAddressQuery.Datum> mCoreKitPagedQuery;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -78,7 +75,7 @@ public class TxsAsReceiverRoleActivity extends AppCompatActivity {
                 mTxsAsReceiverRoleAdapter.notifyDataSetChanged();
 
                 mTxsAsReceiverRoleAdapter.setEnableLoadMore(false);
-                mTransactionsByAddressQueryHelper.refresh();
+                mCoreKitPagedQuery.startInitQuery();
             }
         });
 
@@ -96,43 +93,82 @@ public class TxsAsReceiverRoleActivity extends AppCompatActivity {
         mTxsAsReceiverRoleAdapter.setOnLoadMoreListener(new BaseQuickAdapter.RequestLoadMoreListener() {
             @Override
             public void onLoadMoreRequested() {
-                mTransactionsByAddressQueryHelper.loadMore();
+                mCoreKitPagedQuery.startLoadMoreQuery();
             }
         }, mRecyclerView);
         mRecyclerView.setAdapter(mTxsAsReceiverRoleAdapter);
 
-
-        mTransactionsByAddressQueryHelper = new TransactionsByAddressQueryHelper(this, this, BATCToolApp.getInstance().abCoreKitClient());
-        mTransactionsByAddressQueryHelper.setObserve(new Observer<CoreKitPagedBean<List<TransactionsByAddressQuery.Datum>>>() {
+        mPagedQueryHelper = new PagedQueryHelper<TransactionsByAddressQuery.Data, TransactionsByAddressQuery.Datum>() {
             @Override
-            public void onChanged(@Nullable CoreKitPagedBean<List<TransactionsByAddressQuery.Datum>> coreKitPagedBean) {
-                //1. handle return data
-                if (coreKitPagedBean.getStatus() == CoreKitBean.SUCCESS_CODE) {
-                    if (coreKitPagedBean.getData() != null) {
-                        // new a old list
-                        List<TransactionsByAddressQuery.Datum> oldList = new ArrayList<>();
-                        oldList.addAll(mDatumList);
+            public Query getInitialQuery() {
+                return TransactionsByAddressQuery.builder().receiver(address).build();
+            }
 
-                        // set mBlocks with new data
-                        mDatumList = coreKitPagedBean.getData();
-                        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new CoreKitDiffUtil<>(oldList, mDatumList), true);
-                        // need this line , otherwise the update will have no effect
-                        mTxsAsReceiverRoleAdapter.setNewData(mDatumList);
-                        result.dispatchUpdatesTo(mTxsAsReceiverRoleAdapter);
-                    }
+            @Override
+            public Query getLoadMoreQuery() {
+                PageInput pageInput = null;
+                if (!TextUtils.isEmpty(getCursor())) {
+                    pageInput = PageInput.builder().cursor(getCursor()).build();
                 }
+                return TransactionsByAddressQuery.builder().receiver(address).paging(pageInput).build();
+            }
+
+            @Override
+            public List<TransactionsByAddressQuery.Datum> map(TransactionsByAddressQuery.Data data) {
+                if (data.getTransactionsByAddress() != null) {
+                    // set page info to CoreKitPagedQuery
+                    if (data.getTransactionsByAddress().getPage() != null) {
+                        // set is have next flag to CoreKitPagedQuery
+                        setHasMore(data.getTransactionsByAddress().getPage().isNext());
+                        // set new cursor to CoreKitPagedQuery
+                        setCursor(data.getTransactionsByAddress().getPage().getCursor());
+                    }
+                    return data.getTransactionsByAddress().getData();
+                }
+                return null;
+            }
+        };
+
+        mCoreKitPagedQuery = new CoreKitPagedQuery<>(this, BATCToolApp.getInstance().abCoreKitClient(), mPagedQueryHelper);
+        mCoreKitPagedQuery.setPagedQueryResultListener(new CoreKitPagedQueryResultListener<TransactionsByAddressQuery.Datum>() {
+            @Override
+            public void onSuccess(List<TransactionsByAddressQuery.Datum> list) {
+                //1. handle return data
+                // new a old list
+                List<TransactionsByAddressQuery.Datum> oldList = new ArrayList<>();
+                oldList.addAll(mDatumList);
+
+                // set mBlocks with new data
+                mDatumList = list;
+                DiffUtil.DiffResult result = DiffUtil.calculateDiff(new CoreKitDiffUtil<>(oldList, mDatumList), true);
+                // need this line , otherwise the update will have no effect
+                mTxsAsReceiverRoleAdapter.setNewData(mDatumList);
+                result.dispatchUpdatesTo(mTxsAsReceiverRoleAdapter);
 
                 //2. view status change and loadMore component need
                 mSwipeRefreshLayout.setVisibility(View.VISIBLE);
                 mSwipeRefreshLayout.setRefreshing(false);
-                if (mTransactionsByAddressQueryHelper.isHasMore()) {
+                if (mPagedQueryHelper.isHasMore()) {
                     mTxsAsReceiverRoleAdapter.setEnableLoadMore(true);
                     mTxsAsReceiverRoleAdapter.loadMoreComplete();
                 } else {
                     mTxsAsReceiverRoleAdapter.loadMoreEnd();
                 }
             }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
         });
+
+        mCoreKitPagedQuery.startInitQuery();
+
 
         refresh();
     }
@@ -174,50 +210,6 @@ public class TxsAsReceiverRoleActivity extends AppCompatActivity {
                 return false;
             default:
                 return super.onOptionsItemSelected(item);
-        }
-    }
-
-    /**
-     * TransactionsByAddressQueryHelper for TransactionsByAddressQuery
-     */
-    private class TransactionsByAddressQueryHelper extends CoreKitPagedQuery<TransactionsByAddressQuery.Data, TransactionsByAddressQuery.Datum> {
-
-        public TransactionsByAddressQueryHelper(FragmentActivity activity, LifecycleOwner lifecycleOwner, ABCoreKitClient client) {
-            super(activity, lifecycleOwner, client);
-        }
-
-        @Override
-        public List<TransactionsByAddressQuery.Datum> map(Response<TransactionsByAddressQuery.Data> dataResponse) {
-            if (dataResponse != null && dataResponse.data().getTransactionsByAddress() != null) {
-                // set page info to CoreKitPagedQuery
-                if (dataResponse.data().getTransactionsByAddress().getPage() != null) {
-                    // set is have next flag to CoreKitPagedQuery
-                    setHasMore(dataResponse.data().getTransactionsByAddress().getPage().isNext());
-                    // set new cursor to CoreKitPagedQuery
-                    setCursor(dataResponse.data().getTransactionsByAddress().getPage().getCursor());
-                }
-                return dataResponse.data().getTransactionsByAddress().getData();
-            }
-            return null;
-        }
-
-        @Override
-        public Query getInitialQuery() {
-            return TransactionsByAddressQuery.builder().receiver(address).build();
-        }
-
-        @Override
-        public Query getLoadMoreQuery() {
-            PageInput pageInput = null;
-            if (!TextUtils.isEmpty(getCursor())) {
-                pageInput = PageInput.builder().cursor(getCursor()).build();
-            }
-            return TransactionsByAddressQuery.builder().receiver(address).paging(pageInput).build();
-        }
-
-        @Override
-        public Query getRefreshQuery() {
-            return TransactionsByAddressQuery.builder().receiver(address).build();
         }
     }
 }
